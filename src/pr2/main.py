@@ -2,7 +2,7 @@ import argparse
 from pathlib import Path
 
 
-ROUND_DIGITS = 4
+ROUND_DIGITS = 3
 
 LENGTH_TO_METERS = {
     "mm": 0.001,
