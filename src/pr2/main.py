@@ -1,5 +1,8 @@
 import argparse
+from pathlib import Path
 
+
+ROUND_DIGITS = 4
 
 LENGTH_TO_METERS = {
     "mm": 0.001,
@@ -57,15 +60,76 @@ def convert_temperature(
     return celsius + 273.15
 
 
+def convert(
+    category: str,
+    value: float,
+    from_unit: str,
+    to_unit: str,
+) -> float:
+    if category == "length":
+        return convert_length(value, from_unit, to_unit)
+
+    if category == "mass":
+        return convert_mass(value, from_unit, to_unit)
+
+    if category == "temperature":
+        return convert_temperature(value, from_unit, to_unit)
+
+    raise ValueError("Unsupported category")
+
+
+def convert_batch_file(path: str) -> list[str]:
+    results = []
+
+    lines = Path(path).read_text(encoding="utf-8").splitlines()
+
+    for line_number, line in enumerate(lines, start=1):
+        parts = [part.strip() for part in line.split(";")]
+
+        if len(parts) != 4:
+            raise ValueError(f"Invalid format on line {line_number}")
+
+        category, raw_value, from_unit, to_unit = parts
+
+        try:
+            value = float(raw_value)
+        except ValueError as exc:
+            raise ValueError(
+                f"Invalid number on line {line_number}"
+            ) from exc
+
+        result = convert(
+            category,
+            value,
+            from_unit,
+            to_unit,
+        )
+
+        results.append(
+            f"{category};{value};{from_unit};{to_unit};"
+            f"{round(result, ROUND_DIGITS)}"
+        )
+
+    return results
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Unit converter")
+
     parser.add_argument(
         "category",
+        nargs="?",
         choices=["length", "mass", "temperature"],
     )
-    parser.add_argument("value", type=float)
-    parser.add_argument("from_unit")
-    parser.add_argument("to_unit")
+    parser.add_argument("value", nargs="?", type=float)
+    parser.add_argument("from_unit", nargs="?")
+    parser.add_argument("to_unit", nargs="?")
+
+    parser.add_argument(
+        "--file",
+        help="Path to a batch input file",
+    )
+
     return parser
 
 
@@ -73,27 +137,35 @@ def main() -> None:
     args = build_parser().parse_args()
 
     try:
-        if args.category == "length":
-            result = convert_length(
-                args.value,
-                args.from_unit,
-                args.to_unit,
-            )
-        elif args.category == "mass":
-            result = convert_mass(
-                args.value,
-                args.from_unit,
-                args.to_unit,
-            )
-        else:
-            result = convert_temperature(
-                args.value,
-                args.from_unit,
-                args.to_unit,
+        if args.file:
+            for result in convert_batch_file(args.file):
+                print(result)
+
+            return
+
+        values = (
+            args.category,
+            args.value,
+            args.from_unit,
+            args.to_unit,
+        )
+
+        if any(value is None for value in values):
+            raise ValueError(
+                "Single conversion requires: "
+                "category value from_unit to_unit"
             )
 
-        print(result)
-    except ValueError as error:
+        result = convert(
+            args.category,
+            args.value,
+            args.from_unit,
+            args.to_unit,
+        )
+
+        print(round(result, ROUND_DIGITS))
+
+    except (ValueError, OSError) as error:
         raise SystemExit(f"Error: {error}")
 
 
