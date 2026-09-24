@@ -2,7 +2,7 @@ import argparse
 from pathlib import Path
 
 
-ROUND_DIGITS = 2
+DEFAULT_ROUND_DIGITS = 2
 
 LENGTH_TO_METERS = {
     "mm": 0.001,
@@ -78,7 +78,10 @@ def convert(
     raise ValueError("Unsupported category")
 
 
-def convert_batch_file(path: str) -> list[str]:
+def convert_batch_file(
+    path: str,
+    round_digits: int,
+) -> list[str]:
     results = []
 
     lines = Path(path).read_text(encoding="utf-8").splitlines()
@@ -107,7 +110,7 @@ def convert_batch_file(path: str) -> list[str]:
 
         results.append(
             f"{category};{value};{from_unit};{to_unit};"
-            f"{round(result, ROUND_DIGITS)}"
+            f"{round(result, round_digits)}"
         )
 
     return results
@@ -130,6 +133,16 @@ def build_parser() -> argparse.ArgumentParser:
         help="Path to a batch input file",
     )
 
+    parser.add_argument(
+        "--round-digits",
+        type=int,
+        default=DEFAULT_ROUND_DIGITS,
+        help=(
+            "Number of digits after decimal point "
+            f"(default: {DEFAULT_ROUND_DIGITS})"
+        ),
+    )
+
     return parser
 
 
@@ -138,7 +151,10 @@ def main() -> None:
 
     try:
         if args.file:
-            for result in convert_batch_file(args.file):
+            for result in convert_batch_file(
+                args.file,
+                args.round_digits,
+            ):
                 print(result)
 
             return
@@ -163,7 +179,7 @@ def main() -> None:
             args.to_unit,
         )
 
-        print(round(result, ROUND_DIGITS))
+        print(round(result, args.round_digits))
 
     except (ValueError, OSError) as error:
         raise SystemExit(f"Error: {error}")
