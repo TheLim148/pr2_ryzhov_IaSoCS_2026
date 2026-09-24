@@ -1,6 +1,8 @@
 import argparse
 
 
+ROUND_DIGITS = 4
+
 LENGTH_TO_METERS = {
     "mm": 0.001,
     "cm": 0.01,
@@ -57,6 +59,24 @@ def convert_temperature(
     return celsius + 273.15
 
 
+def convert(
+    category: str,
+    value: float,
+    from_unit: str,
+    to_unit: str,
+) -> float:
+    if category == "length":
+        return convert_length(value, from_unit, to_unit)
+
+    if category == "mass":
+        return convert_mass(value, from_unit, to_unit)
+
+    if category == "temperature":
+        return convert_temperature(value, from_unit, to_unit)
+
+    raise ValueError("Unsupported category")
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Unit converter")
     parser.add_argument(
@@ -73,26 +93,14 @@ def main() -> None:
     args = build_parser().parse_args()
 
     try:
-        if args.category == "length":
-            result = convert_length(
-                args.value,
-                args.from_unit,
-                args.to_unit,
-            )
-        elif args.category == "mass":
-            result = convert_mass(
-                args.value,
-                args.from_unit,
-                args.to_unit,
-            )
-        else:
-            result = convert_temperature(
-                args.value,
-                args.from_unit,
-                args.to_unit,
-            )
+        result = convert(
+            args.category,
+            args.value,
+            args.from_unit,
+            args.to_unit,
+        )
 
-        print(result)
+        print(round(result, ROUND_DIGITS))
     except ValueError as error:
         raise SystemExit(f"Error: {error}")
 
