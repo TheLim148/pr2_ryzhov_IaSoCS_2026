@@ -31,6 +31,32 @@ def convert_mass(value: float, from_unit: str, to_unit: str) -> float:
     return value_in_kg / MASS_TO_KG[to_unit]
 
 
+def convert_temperature(
+    value: float,
+    from_unit: str,
+    to_unit: str,
+) -> float:
+    supported_units = {"c", "f", "k"}
+
+    if from_unit not in supported_units or to_unit not in supported_units:
+        raise ValueError("Unsupported temperature unit")
+
+    if from_unit == "c":
+        celsius = value
+    elif from_unit == "f":
+        celsius = (value - 32) * 5 / 9
+    else:
+        celsius = value - 273.15
+
+    if to_unit == "c":
+        return celsius
+
+    if to_unit == "f":
+        return celsius * 9 / 5 + 32
+
+    return celsius + 273.15
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Unit converter")
     parser.add_argument(
@@ -60,8 +86,11 @@ def main() -> None:
                 args.to_unit,
             )
         else:
-            print("Conversion is not implemented yet.")
-            return
+            result = convert_temperature(
+                args.value,
+                args.from_unit,
+                args.to_unit,
+            )
 
         print(result)
     except ValueError as error:
