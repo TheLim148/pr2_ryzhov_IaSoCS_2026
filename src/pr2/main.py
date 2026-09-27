@@ -87,6 +87,10 @@ def convert_batch_file(
     lines = Path(path).read_text(encoding="utf-8").splitlines()
 
     for line_number, line in enumerate(lines, start=1):
+
+        if not line.strip():
+            continue
+
         parts = [part.strip() for part in line.split(";")]
 
         if len(parts) != 4:
